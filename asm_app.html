@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASM - Autorização de Saída de Material</title>
+    <!-- Carregamento do Tailwind CSS para estilo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração do Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* Estilos personalizados para a área de assinatura */
+        .signature-box {
+            border: 1px dashed #9ca3af; /* Cor cinza sutil */
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+            color: #4b5563;
+        }
+
+        /* Estilo para inputs de formulário */
+        .form-input {
+            @apply w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150;
+        }
+
+        /* Estilo para labels */
+        .form-label {
+            @apply block text-sm font-medium text-gray-700 mb-1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen p-4 sm:p-6">
+
+    <!-- Container Principal do Aplicativo -->
+    <div id="app" class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden">
+        
+        <!-- Cabeçalho -->
+        <header class="bg-blue-600 p-4 text-white">
+            <h1 class="text-2xl font-bold text-center">
+                <span class="inline-block align-middle mr-2 text-3xl">📦</span>
+                Emissão de ASM
+            </h1>
+            <p class="text-sm text-center opacity-90">Autorização de Saída de Material</p>
+        </header>
+
+        <!-- Navegação (Tabs) -->
+        <nav class="flex border-b border-gray-200">
+            <button id="tab-form" onclick="showTab('form')" class="flex-1 py-3 text-center text-sm font-medium border-b-2 transition duration-300"
+                style="border-color: #3b82f6; color: #3b82f6;">
+                Novo ASM
+            </button>
+            <button id="tab-history" onclick="showTab('history')" class="flex-1 py-3 text-center text-sm font-medium text-gray-500 border-b-2 border-transparent hover:border-blue-400 hover:text-blue-500 transition duration-300">
+                Histórico
+            </button>
+        </nav>
+
+        <!-- Conteúdo das Abas -->
+        <main class="p-4 sm:p-6">
+            
+            <!-- Mensagem de Status (Carregamento, Erro, Sucesso) -->
+            <div id="status-message" class="hidden p-3 mb-4 rounded-lg text-center font-semibold" role="alert"></div>
+
+            <!-- 1. Formulário ASM -->
+            <section id="content-form" class="space-y-6">
+                
+                <!-- 1.1 Informações da Empresa de Origem (Mock/Pre-preenchido) -->
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                    <h2 class="text-lg font-semibold text-blue-800 mb-3">1. Empresa de Origem (Nossa Empresa)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                        <div><span class="font-medium">Nome:</span> Engenharia Alpha Ltda.</div>
+                        <div><span class="font-medium">CNPJ:</span> 00.000.000/0001-00</div>
+                        <div><span class="font-medium">Endereço:</span> Rua da Inovação, 123</div>
+                        <div><span class="font-medium">CEP:</span> 01000-000</div>
+                        <div><span class="font-medium">Telefone:</span> (11) 98765-4321</div>
+                    </div>
+                </div>
+
+                <!-- 1.2 Informações da Empresa de Destino -->
+                <div class="p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">2. Empresa de Destino (Fornecedor/Cliente)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="destName" class="form-label">Nome da Empresa</label>
+                            <input type="text" id="destName" class="form-input" required>
+                        </div>
+                        <div>
+                            <label for="destCnpj" class="form-label">CNPJ</label>
+                            <input type="text" id="destCnpj" class="form-input" placeholder="00.000.000/0001-00" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="destAddress" class="form-label">Endereço</label>
+                            <input type="text" id="destAddress" class="form-input" required>
+                        </div>
+                        <div>
+                            <label for="destCep" class="form-label">CEP</label>
+                            <input type="text" id="destCep" class="form-input" placeholder="00000-000" required>
+                        </div>
+                        <div>
+                            <label for="destPhone" class="form-label">Telefone</label>
+                            <input type="tel" id="destPhone" class="form-input" placeholder="(00) 00000-0000" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.3 Itens e Valores -->
+                <div class="p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">3. Materiais e Valores</h2>
+                    
+                    <div id="material-list" class="space-y-4">
+                        <!-- Linhas de material serão inseridas aqui pelo JS -->
+                    </div>
+
+                    <button onclick="addMaterialRow()" class="mt-4 w-full py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition duration-200 flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Adicionar Material
+                    </button>
+
+                    <div class="mt-6 p-3 bg-gray-50 rounded-lg text-lg font-bold flex justify-between">
+                        <span>Valor Total dos Materiais:</span>
+                        <span id="total-value">R$ 0.00</span>
+                    </div>
+                </div>
+
+                <!-- 1.4 Detalhes da Saída -->
+                <div class="p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">4. Detalhes da Saída</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="exitDate" class="form-label">Data da Saída</label>
+                            <input type="text" id="exitDate" class="form-input bg-gray-100" readonly>
+                        </div>
+                        <div>
+                            <label for="requesterName" class="form-label">Nome do Solicitante</label>
+                            <input type="text" id="requesterName" class="form-input" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="reason" class="form-label">Motivo da Saída</label>
+                            <textarea id="reason" class="form-input resize-none" rows="3">Saída de material para fornecedor/manutenção.</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 1.5 Assinatura e Submissão -->
+                <div class="p-4 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-800">5. Aprovação</h2>
+                    <div>
+                        <label class="form-label">Assinatura do Gestor (Simulação)</label>
+                        <div class="signature-box mt-1">
+                            Aprovação por Email/Sistema (Simulado)
+                        </div>
+                    </div>
+
+                    <button onclick="submitForm()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-200 shadow-md">
+                        Enviar ASM e Autorizar Saída (Simular Email)
+                    </button>
+                </div>
+            </section>
+
+            <!-- 2. Histórico ASM -->
+            <section id="content-history" class="hidden">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Histórico de ASMs Solicitadas</h2>
+                <div id="history-list" class="space-y-4">
+                    <!-- Cards de histórico serão inseridos aqui -->
+                    <p class="text-gray-500 text-center p-6 bg-gray-50 rounded-lg" id="loading-history">Carregando histórico...</p>
+                </div>
+                <div id="no-history" class="hidden text-gray-500 text-center p-6 bg-gray-50 rounded-lg">
+                    Nenhuma Autorização de Saída de Material encontrada para o seu usuário.
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais para o Firebase (preenchidas pelo ambiente Canvas)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-asm-app';
+
+        // Variáveis globais do aplicativo
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+        let materialRows = []; // Armazena a lista de materiais
+
+        // Configuração e Inicialização do Firebase
+        function setupFirebase() {
+            if (!Object.keys(firebaseConfig).length) {
+                console.error("Firebase config not available.");
+                displayStatus('Erro ao iniciar o Firebase: Configuração ausente.', 'bg-red-100 text-red-700');
+                return;
+            }
+
+            try {
+                // setLogLevel('Debug'); // Ativar logs de debug, se necessário
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // 1. Ouvinte de Estado de Autenticação
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        console.log("Usuário autenticado:", userId);
+                        // Exibir o ID do usuário para fins de depuração e colaboração
+                        // Nota: O userId completo é necessário para outros usuários encontrarem o solicitante.
+                        document.getElementById('requesterName').placeholder = `Seu ID de Usuário (Necessário para Histórico): ${userId}`;
+                        loadHistoryListener(); // Iniciar o listener do histórico
+                    } else {
+                        // Tenta autenticar via token ou anonimamente
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Erro na autenticação:", error);
+                            displayStatus('Erro de autenticação. O histórico não estará disponível.', 'bg-red-100 text-red-700');
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização do Firebase:", error);
+                displayStatus('Erro ao iniciar o Firebase.', 'bg-red-100 text-red-700');
+            }
+        }
+
+        // Função para mostrar mensagens de status
+        function displayStatus(message, className) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `p-3 mb-4 rounded-lg text-center font-semibold ${className}`;
+            statusDiv.classList.remove('hidden');
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Listener para carregar e atualizar o histórico em tempo real
+        function loadHistoryListener() {
+            if (!isAuthReady || !userId) return;
+
+            const collectionPath = `artifacts/${appId}/users/${userId}/asms`;
+            const asmCollection = collection(db, collectionPath);
+            
+            // Cria a query. NÃO usamos orderBy, mas usaremos uma query simples
+            // const q = query(asmCollection, orderBy('submissionDate', 'desc')); 
+            const q = query(asmCollection); // Query simples
+
+            const historyListDiv = document.getElementById('history-list');
+            const loadingHistory = document.getElementById('loading-history');
+            const noHistory = document.getElementById('no-history');
+
+            // Usamos onSnapshot para atualizações em tempo real
+            onSnapshot(q, (querySnapshot) => {
+                const asms = [];
+                querySnapshot.forEach((doc) => {
+                    asms.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Ordenar em memória (para evitar problemas de índice do Firestore)
+                asms.sort((a, b) => (b.submissionDate?.toDate() || 0) - (a.submissionDate?.toDate() || 0));
+
+                renderHistory(asms);
+                loadingHistory.classList.add('hidden');
+            }, (error) => {
+                console.error("Erro ao carregar o histórico:", error);
+                loadingHistory.textContent = 'Erro ao carregar o histórico.';
+            });
+        }
+        
+        // Função para renderizar os cards do histórico
+        function renderHistory(asms) {
+            const historyListDiv = document.getElementById('history-list');
+            const noHistory = document.getElementById('no-history');
+            historyListDiv.innerHTML = '';
+            
+            if (asms.length === 0) {
+                noHistory.classList.remove('hidden');
+                return;
+            }
+            noHistory.classList.add('hidden');
+
+            asms.forEach(asm => {
+                const date = asm.submissionDate ? asm.submissionDate.toDate().toLocaleDateString('pt-BR') : 'Data Indisponível';
+                const total = (asm.totalValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
+                const materialSummary = asm.materials.map(m => `${m.name} (${m.qty} ${m.unit})`).join(', ');
+
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 sm:p-5 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition duration-200';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-base font-bold text-blue-700">ASM para: ${asm.destination.name || 'Desconhecido'}</h3>
+                        <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${date}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2"><strong>Solicitante:</strong> ${asm.requesterName || 'N/A'}</p>
+                    <p class="text-sm text-gray-600 mb-2"><strong>Motivo:</strong> ${asm.reason || 'N/A'}</p>
+                    <p class="text-sm text-gray-600 mb-2"><strong>Materiais:</strong> ${materialSummary.length > 100 ? materialSummary.substring(0, 100) + '...' : materialSummary}</p>
+                    <div class="mt-3 text-right">
+                        <span class="text-lg font-extrabold text-green-600">${total}</span>
+                    </div>
+                `;
+                historyListDiv.appendChild(card);
+            });
+        }
+
+
+        // =========================================================
+        // LÓGICA DO FORMULÁRIO
+        // =========================================================
+
+        let materialCounter = 0; // Contador para IDs de linhas
+
+        // Função para calcular o valor total
+        window.calculateTotal = function() {
+            let total = 0;
+            materialRows.forEach(id => {
+                const qtyInput = document.getElementById(`qty-${id}`);
+                const valueInput = document.getElementById(`value-${id}`);
+                
+                const qty = parseFloat(qtyInput?.value) || 0;
+                const value = parseFloat(valueInput?.value.replace(',', '.')) || 0;
+
+                const rowTotal = qty * value;
+                document.getElementById(`row-total-${id}`).textContent = rowTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                total += rowTotal;
+            });
+
+            document.getElementById('total-value').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            return total;
+        }
+
+        // Função para adicionar uma nova linha de material
+        window.addMaterialRow = function() {
+            const id = materialCounter++;
+            materialRows.push(id);
+            const listDiv = document.getElementById('material-list');
+
+            const row = document.createElement('div');
+            row.id = `row-${id}`;
+            row.className = 'p-3 border border-gray-300 rounded-lg bg-white shadow-inner';
+            row.innerHTML = `
+                <div class="grid grid-cols-6 gap-3 items-end">
+                    <!-- Material -->
+                    <div class="col-span-6 sm:col-span-3">
+                        <label for="name-${id}" class="form-label">Material</label>
+                        <input type="text" id="name-${id}" class="form-input" placeholder="Ex: Viga I 12p" required>
+                    </div>
+                    <!-- Qty -->
+                    <div class="col-span-3 sm:col-span-1">
+                        <label for="qty-${id}" class="form-label">Qtd</label>
+                        <input type="number" id="qty-${id}" class="form-input" min="1" value="1" oninput="calculateTotal()" required>
+                    </div>
+                    <!-- Unit -->
+                    <div class="col-span-3 sm:col-span-1">
+                        <label for="unit-${id}" class="form-label">Unid.</label>
+                        <select id="unit-${id}" class="form-input" required>
+                            <option>UN</option>
+                            <option>KG</option>
+                            <option>M</option>
+                            <option>L</option>
+                        </select>
+                    </div>
+                    <!-- Delete Button -->
+                    <div class="col-span-6 sm:col-span-1 flex justify-end sm:justify-center items-center">
+                        <button onclick="removeMaterialRow(${id})" class="p-2 text-red-500 hover:text-red-700 transition duration-200" title="Remover item">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <!-- Valor Unitário e Total da Linha -->
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                        <label for="value-${id}" class="form-label">Valor Unitário (R$)</label>
+                        <input type="number" id="value-${id}" class="form-input" step="0.01" min="0.01" value="1.00" oninput="calculateTotal()" required>
+                    </div>
+                    <div class="pt-2">
+                        <label class="form-label">Valor Total (Linha)</label>
+                        <div id="row-total-${id}" class="py-2 px-3 bg-gray-200 rounded-lg font-medium text-gray-700">R$ 1.00</div>
+                    </div>
+                </div>
+            `;
+            listDiv.appendChild(row);
+            calculateTotal();
+        }
+
+        // Função para remover uma linha de material
+        window.removeMaterialRow = function(id) {
+            const index = materialRows.indexOf(id);
+            if (index > -1) {
+                materialRows.splice(index, 1);
+                document.getElementById(`row-${id}`).remove();
+                calculateTotal();
+            }
+        }
+
+        // Função para submeter o formulário
+        window.submitForm = async function() {
+            const formInputs = [
+                'destName', 'destCnpj', 'destAddress', 'destCep', 'destPhone', 
+                'requesterName', 'reason'
+            ];
+            
+            // 1. Validação Simples
+            for (const id of formInputs) {
+                const input = document.getElementById(id);
+                if (!input.value) {
+                    displayStatus(`Erro: Preencha o campo "${document.querySelector(`label[for="${id}"]`).textContent}".`, 'bg-yellow-100 text-yellow-700');
+                    input.focus();
+                    return;
+                }
+            }
+
+            if (materialRows.length === 0) {
+                displayStatus('Erro: Adicione pelo menos um item material.', 'bg-yellow-100 text-yellow-700');
+                return;
+            }
+            
+            // 2. Coleta de Dados do Formulário
+            const materials = materialRows.map(id => {
+                const qty = parseFloat(document.getElementById(`qty-${id}`).value) || 0;
+                const value = parseFloat(document.getElementById(`value-${id}`).value.replace(',', '.')) || 0;
+                return {
+                    name: document.getElementById(`name-${id}`).value,
+                    qty: qty,
+                    unit: document.getElementById(`unit-${id}`).value,
+                    value: value,
+                    total: qty * value
+                };
+            }).filter(m => m.qty > 0 && m.value > 0);
+
+            if (materials.length !== materialRows.length) {
+                displayStatus('Erro: Certifique-se de que todos os materiais têm nome, quantidade e valor unitário válidos.', 'bg-yellow-100 text-yellow-700');
+                return;
+            }
+
+            const totalValue = calculateTotal();
+
+            const asmData = {
+                // Origem (Mock Data)
+                origin: {
+                    name: "Engenharia Alpha Ltda.",
+                    cnpj: "00.000.000/0001-00",
+                    address: "Rua da Inovação, 123",
+                    cep: "01000-000",
+                    phone: "(11) 98765-4321"
+                },
+                // Destino (Input)
+                destination: {
+                    name: document.getElementById('destName').value,
+                    cnpj: document.getElementById('destCnpj').value,
+                    address: document.getElementById('destAddress').value,
+                    cep: document.getElementById('destCep').value,
+                    phone: document.getElementById('destPhone').value,
+                },
+                // Detalhes da Saída
+                exitDate: document.getElementById('exitDate').value,
+                reason: document.getElementById('reason').value,
+                requesterName: document.getElementById('requesterName').value,
+                // Materiais
+                materials: materials,
+                totalValue: totalValue,
+                // Status/Meta
+                managerSignature: true, // Simulado como aprovado por default
+                submissionDate: serverTimestamp(),
+                requesterId: userId || 'anonimo',
+            };
+
+            // 3. Simulação de Envio de Email
+            // Em um ambiente real, você faria uma chamada de API para um backend que enviaria o email.
+            const emailBody = `
+                --- Autorização de Saída de Material (ASM) ---
+                Data: ${asmData.exitDate}
+                Solicitante: ${asmData.requesterName}
+                ID do Solicitante: ${asmData.requesterId}
+
+                Empresa de Origem: ${asmData.origin.name} (${asmData.origin.cnpj})
+                Empresa de Destino: ${asmData.destination.name} (${asmData.destination.cnpj})
+                Motivo: ${asmData.reason}
+
+                --- Itens ---
+                ${asmData.materials.map(m => 
+                    `  - ${m.name}: ${m.qty} ${m.unit} @ R$ ${m.value.toFixed(2)} = R$ ${m.total.toFixed(2)}`
+                ).join('\n')}
+                -----------------------------
+                Valor Total: R$ ${totalValue.toFixed(2)}
+                -----------------------------
+                
+                Este ASM foi submetido e simuladamente 'Aprovado'.
+            `;
+            
+            console.log("SIMULAÇÃO DE ENVIO DE EMAIL (Para endereços pré-estabelecidos):");
+            console.log(emailBody);
+            
+            // 4. Salvar no Firestore (Histórico)
+            if (db && userId) {
+                try {
+                    const collectionPath = `artifacts/${appId}/users/${userId}/asms`;
+                    await addDoc(collection(db, collectionPath), asmData);
+                    
+                    displayStatus('ASM submetido e salvo no histórico com sucesso! O email de autorização foi SIMULADO.', 'bg-green-100 text-green-700');
+                    resetForm();
+
+                } catch (error) {
+                    console.error("Erro ao salvar o ASM no Firestore:", error);
+                    displayStatus('Erro ao salvar no histórico. O email foi SIMULADO, mas o histórico falhou.', 'bg-red-100 text-red-700');
+                }
+            } else {
+                displayStatus('ASM submetido com sucesso! O email de autorização foi SIMULADO. O histórico não pôde ser salvo (sem conexão/autenticação).', 'bg-green-100 text-green-700');
+                resetForm();
+            }
+        }
+        
+        // Função para limpar o formulário e adicionar o primeiro item
+        function resetForm() {
+            document.getElementById('destName').value = '';
+            document.getElementById('destCnpj').value = '';
+            document.getElementById('destAddress').value = '';
+            document.getElementById('destCep').value = '';
+            document.getElementById('destPhone').value = '';
+            document.getElementById('requesterName').value = '';
+            document.getElementById('reason').value = 'Saída de material para fornecedor/manutenção.';
+            
+            // Limpar lista de materiais
+            materialRows = [];
+            document.getElementById('material-list').innerHTML = '';
+            materialCounter = 0;
+
+            addMaterialRow(); // Adiciona a primeira linha vazia
+        }
+
+        // =========================================================
+        // LÓGICA DE UI
+        // =========================================================
+
+        // Função para alternar entre as abas
+        window.showTab = function(tabName) {
+            const formContent = document.getElementById('content-form');
+            const historyContent = document.getElementById('content-history');
+            const formTab = document.getElementById('tab-form');
+            const historyTab = document.getElementById('tab-history');
+
+            if (tabName === 'form') {
+                formContent.classList.remove('hidden');
+                historyContent.classList.add('hidden');
+                formTab.style.borderColor = '#3b82f6';
+                formTab.style.color = '#3b82f6';
+                historyTab.style.borderColor = 'transparent';
+                historyTab.style.color = '#6b7280';
+            } else if (tabName === 'history') {
+                formContent.classList.add('hidden');
+                historyContent.classList.remove('hidden');
+                historyTab.style.borderColor = '#3b82f6';
+                historyTab.style.color = '#3b82f6';
+                formTab.style.borderColor = 'transparent';
+                formTab.style.color = '#6b7280';
+            }
+        }
+
+        // Configuração inicial ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            // Preenche a data atual
+            const today = new Date();
+            document.getElementById('exitDate').value = today.toLocaleDateString('pt-BR');
+
+            // Adiciona a primeira linha de material
+            addMaterialRow(); 
+            
+            // Inicializa o Firebase
+            setupFirebase();
+        });
+    </script>
+
+</body>
+</html>
