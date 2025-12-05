@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASM - Autorização de Saída de Material</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
+    <!-- Configuração Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        .signature-box {
+            border: 2px dashed #9ca3af;
+            background-color: #f9fafb;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+            color: #6b7280;
+            border-radius: 0.5rem;
+        }
+
+        .form-input {
+            @apply w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-sm;
+        }
+
+        .form-label {
+            @apply block text-sm font-semibold text-gray-700 mb-1.5;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen p-4 sm:p-6">
+
+    <!-- Container Principal -->
+    <div id="app" class="max-w-4xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+        
+        <!-- Cabeçalho -->
+        <header class="bg-gradient-to-r from-blue-700 to-blue-600 p-6 text-white shadow-md">
+            <h1 class="text-3xl font-bold text-center tracking-tight">
+                <span class="inline-block align-middle mr-2 text-4xl">📦</span>
+                Emissão de ASM
+            </h1>
+            <p class="text-blue-100 text-center mt-1 text-sm font-medium opacity-90">Autorização de Saída de Material - TECON Salvador</p>
+        </header>
+
+        <!-- Navegação (Tabs) -->
+        <nav class="flex border-b border-gray-200 bg-gray-50">
+            <button id="tab-form" onclick="showTab('form')" class="flex-1 py-4 text-center text-sm font-bold border-b-2 transition duration-200 text-blue-600 border-blue-600 bg-white">
+                Novo Documento
+            </button>
+            <button id="tab-history" onclick="showTab('history')" class="flex-1 py-4 text-center text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-blue-500 hover:bg-gray-50">
+                Histórico
+            </button>
+        </nav>
+
+        <!-- Conteúdo -->
+        <main class="p-6 sm:p-8">
+            
+            <div id="status-message" class="hidden p-4 mb-6 rounded-lg text-center font-bold shadow-sm" role="alert"></div>
+
+            <!-- TAB: FORMULÁRIO -->
+            <section id="content-form" class="space-y-8">
+                
+                <!-- 1. Origem (TECON SALVADOR) -->
+                <div class="bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-bl-full -mr-10 -mt-10 opacity-50"></div>
+                    <h2 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        1. TECON SALVADOR
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-6 text-sm text-blue-900">
+                        <div><span class="font-bold text-blue-700">Empresa:</span> TECON SALVADOR</div>
+                        <div><span class="font-bold text-blue-700">CNPJ:</span> 03.642.342/0001-01</div>
+                        <div class="md:col-span-2"><span class="font-bold text-blue-700">Endereço:</span> R ENGENHEIRO OSCAR PONTES 97 TERREO</div>
+                        <div><span class="font-bold text-blue-700">Município:</span> SALVADOR-BA</div>
+                        <div><span class="font-bold text-blue-700">CEP:</span> 40.285-030</div>
+                    </div>
+                </div>
+
+                <!-- 2. Destino -->
+                <div class="p-5 rounded-xl border border-gray-200 shadow-sm bg-white">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        2. Empresa de Destino
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        
+                        <!-- Menu de Seleção -->
+                        <div class="md:col-span-2">
+                            <label for="destSelect" class="form-label">Empresa</label>
+                            <select id="destSelect" onchange="fillDestinationDetails(this.value)" class="form-input" required>
+                                <option value="">--- Selecione uma opção ---</option>
+                                <option value="CONCRETA">CONCRETA TECNOLOGIA EM ENGENHARIA LTDA</option>
+                                <option value="WILSON_SONS">WILSON, SONS LOGISTICA LTDA</option>
+                                <option value="HARMONIZA">HARMONIZA ENGENHARIA LTDA - ME</option>
+                                <option value="MAVEQ">MAVEQ LOCADORA LTDA</option>
+                                <option value="MANUAL">--- Preencher manualmente ---</option>
+                            </select>
+                            
+                            <!-- Campo de texto livre para o nome da empresa (Inicialmente oculto) -->
+                            <input type="text" id="destNameInput" class="form-input mt-2" placeholder="Digite o nome da empresa de destino" required style="display: none;">
+                        </div>
+                        
+                        <!-- CNPJ -->
+                        <div>
+                            <label for="destCnpj" class="form-label">CNPJ</label>
+                            <input type="text" id="destCnpj" class="form-input bg-gray-100" placeholder="00.000.000/0000-00" readonly>
+                        </div>
+                        <!-- TELEFONE -->
+                        <div>
+                            <label for="destPhone" class="form-label">Telefone</label>
+                            <input type="tel" id="destPhone" class="form-input bg-gray-100" placeholder="(00) 0000-0000" readonly>
+                        </div>
+                        <!-- ENDEREÇO -->
+                        <div class="md:col-span-2">
+                            <label for="destAddress" class="form-label">Endereço Completo (Rua, Cidade)</label>
+                            <input type="text" id="destAddress" class="form-input bg-gray-100" placeholder="Rua, Número, Bairro" readonly>
+                        </div>
+                        <!-- CEP -->
+                        <div>
+                            <label for="destCep" class="form-label">CEP</label>
+                            <input type="text" id="destCep" class="form-input bg-gray-100" placeholder="00000-000" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Materiais -->
+                <div class="p-5 rounded-xl border border-gray-200 shadow-sm bg-white">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        3. Materiais e Valores
+                    </h2>
+                    
+                    <div id="material-list" class="space-y-4"></div>
+
+                    <button onclick="addMaterialRow()" class="mt-4 w-full py-3 bg-white border-2 border-dashed border-green-500 text-green-600 font-bold rounded-xl hover:bg-green-50 transition duration-200 flex items-center justify-center group">
+                        <svg class="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Adicionar Novo Item
+                    </button>
+
+                    <div class="mt-6 p-4 bg-gray-900 text-white rounded-xl flex justify-between items-center shadow-lg">
+                        <span class="text-gray-300 font-medium">Valor Total Estimado:</span>
+                        <span id="total-value" class="text-2xl font-bold text-green-400">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- 4. Detalhes -->
+                <div class="p-5 rounded-xl border border-gray-200 shadow-sm bg-white">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        4. Detalhes da Operação
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label for="exitDate" class="form-label">Data da Saída</label>
+                            <input type="text" id="exitDate" class="form-input bg-gray-100 text-gray-500 cursor-not-allowed" readonly>
+                        </div>
+                        
+                        <!-- NOVO CAMPO: MENU DE SELEÇÃO DE SOLICITANTE -->
+                        <div>
+                            <label for="requesterSelect" class="form-label">Nome do Solicitante</label>
+                            <select id="requesterSelect" class="form-input" required>
+                                <option value="">--- Selecione o Solicitante ---</option>
+                                <option value="José Tavares">José Tavares</option>
+                                <option value="Clara Ferreira">Clara Ferreira</option>
+                                <option value="Matheus Arcanjo">Matheus Arcanjo</option>
+                                <option value="Caio Andrade">Caio Andrade</option>
+                                <option value="Kayan Santana">Kayan Santana</option>
+                                <option value="Jennifer Andrade">Jennifer Andrade</option>
+                            </select>
+                        </div>
+                        <!-- Campo oculto que armazena o solicitante selecionado (o value do select) -->
+                        <input type="hidden" id="requesterName"> 
+
+                        <div class="md:col-span-2">
+                            <label for="reason" class="form-label">Motivo da Saída</label>
+                            <textarea id="reason" class="form-input resize-none" rows="3">Saída de material para fornecedor/manutenção.</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Aprovação -->
+                <div class="p-5 rounded-xl border border-gray-200 shadow-sm bg-white">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        5. Aprovação e Notificação
+                    </h2>
+                    
+                    <div class="mb-4">
+                        <label for="ccEmails" class="form-label">Emails para Cópia (Cc) - Separe por vírgula</label>
+                        <input type="text" id="ccEmails" class="form-input" placeholder="ex: financeiro@tecon.com.br, expedicao@tecon.com.br">
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">Assinatura Digital do Gestor (Status)</label>
+                        <div class="signature-box mt-2">
+                            Aprovação Automática via Sistema
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2 text-right">O e-mail principal será enviado para: <strong class="text-gray-700">clara.santos@wilsonsons.com.br</strong></p>
+                    </div>
+
+                    <button onclick="submitForm()" id="btn-submit" class="w-full mt-6 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 active:bg-blue-800 transition duration-200 shadow-lg flex items-center justify-center text-lg">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        Enviar ASM (EmailJS)
+                    </button>
+                </div>
+
+            </section>
+
+            <!-- TAB: HISTÓRICO -->
+            <section id="content-history" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Histórico de ASMs</h2>
+                    <button onclick="loadHistory()" class="text-sm text-blue-600 hover:underline">Atualizar</button>
+                </div>
+                
+                <div id="history-list" class="space-y-4"></div>
+                
+                <div id="loading-history" class="text-center py-10">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="text-gray-500 mt-2">Carregando registros...</p>
+                </div>
+                
+                <div id="no-history" class="hidden text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    <p class="text-gray-500">Nenhum registro encontrado.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Scripts (Lógica) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, addDoc, collection, query, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =================================================================
+        // ⚠️ CONFIGURAÇÃO DO EMAILJS
+        // =================================================================
+        const EMAILJS_PUBLIC_KEY = "8thg7ahcNhCx7C7wA"; 
+        const EMAILJS_SERVICE_ID = "service_umuiqeu"; 
+        const EMAILJS_TEMPLATE_ID = "template_45s1y9a"; 
+        const MANAGER_EMAIL = "clara.santos@wilsonsons.com.br"; 
+
+        // Emails de cópia padrão
+        const DEFAULT_CC_EMAILS = "jennifer.andrade@wilsonsons.com.br, vitoria.gois@wilsonsons.com.br";
+        // =================================================================
+        
+        // Dados das Empresas de Destino (ATUALIZADOS)
+        const DESTINATION_COMPANIES = {
+            "CONCRETA": {
+                name: "CONCRETA TECNOLOGIA EM ENGENHARIA LTDA",
+                address: "Rua Professor Fernando Rocha, 291, Salvador",
+                cep: "41194-020",
+                cnpj: "15.231.897/0001-31",
+                phone: "71 3372-3000"
+            },
+            "WILSON_SONS": {
+                name: "WILSON, SONS LOGISTICA LTDA",
+                address: "BR324, Salvador",
+                cep: "41.233-030",
+                cnpj: "03.852.972/0043-51",
+                phone: "(71)3215 6882/6870"
+            },
+            // NOVAS EMPRESAS ADICIONADAS
+            "HARMONIZA": {
+                name: "HARMONIZA ENGENHARIA LTDA - ME",
+                address: "ARLINDO TELES, 29 A, SALVADOR",
+                cep: "40.342-610",
+                cnpj: "08.574.461/0001-80",
+                phone: "71 3372-3000"
+            },
+            "MAVEQ": {
+                name: "Maveq Locadora Ltda",
+                address: "Tv. São Judas Tadeu, 380, Lauro de Freitas",
+                cep: "42700-000",
+                cnpj: "16.483.612/0003-84",
+                phone: "0800 007 1055"
+            }
+        };
+
+
+        // Inicializa EmailJS 
+        try {
+             emailjs.init(EMAILJS_PUBLIC_KEY);
+        } catch(e) { console.error("Erro na inicialização do EmailJS:", e); }
+
+        // Configuração Firebase
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-asm-app';
+        let db, auth, userId;
+
+        if (Object.keys(firebaseConfig).length) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                signInAnonymously(auth);
+                onAuthStateChanged(auth, user => { if(user) { userId = user.uid; loadHistory(); } });
+            } catch (e) { console.error("Erro Firebase Init:", e); }
+        }
+
+        let materialRows = [];
+        let materialCounter = 0;
+
+        /**
+         * Preenche os campos de destino automaticamente com base na seleção.
+         * Desbloqueia os campos para edição se for a opção padrão (selecione).
+         * @param {string} companyKey - A chave da empresa selecionada (ex: "CONCRETA").
+         */
+        window.fillDestinationDetails = function(companyKey) {
+            const isManual = (companyKey === "MANUAL"); // Verifica se o usuário quer preencher manualmente
+            const data = DESTINATION_COMPANIES[companyKey] || { name: "", address: "", cep: "", cnpj: "", phone: "" };
+            
+            const destSelect = document.getElementById('destSelect');
+            const destNameInput = document.getElementById('destNameInput');
+            const destCnpj = document.getElementById('destCnpj');
+            const destPhone = document.getElementById('destPhone');
+            const destAddress = document.getElementById('destAddress');
+            const destCep = document.getElementById('destCep');
+
+            // 1. Alterna a visibilidade e required do campo de escrita livre
+            if (isManual) {
+                destSelect.style.display = 'none';
+                destNameInput.style.display = 'block';
+                destNameInput.setAttribute('required', true);
+                destNameInput.value = ''; 
+            } else {
+                destSelect.style.display = 'block';
+                destNameInput.style.display = 'none';
+                destNameInput.removeAttribute('required');
+            }
+
+            // 2. Preenchimento e bloqueio dos campos de detalhe
+            const inputs = [destCnpj, destPhone, destAddress, destCep];
+            
+            if (!isManual && companyKey) { // Se selecionou uma empresa pré-cadastrada
+                destNameInput.value = data.name; // Preenche o campo de escrita com o nome para ser enviado
+                destCnpj.value = data.cnpj;
+                destPhone.value = data.phone;
+                destAddress.value = data.address;
+                destCep.value = data.cep;
+
+                // Bloqueia os campos
+                inputs.forEach(input => {
+                    input.setAttribute('readonly', true);
+                    input.classList.add('bg-gray-100');
+                });
+            } else {
+                // Se for manual (ou seleção vazia), limpa os campos e desbloqueia
+                destNameInput.value = ''; 
+                destCnpj.value = '';
+                destPhone.value = '';
+                destAddress.value = '';
+                destCep.value = '';
+
+                inputs.forEach(input => {
+                    input.removeAttribute('readonly');
+                    input.classList.remove('bg-gray-100');
+                });
+            }
+        };
+
+
+        window.addMaterialRow = function() {
+            const id = materialCounter++;
+            materialRows.push(id);
+            const listDiv = document.getElementById('material-list');
+            const row = document.createElement('div');
+            row.id = `row-${id}`;
+            row.className = 'p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm relative transition hover:shadow-md';
+            row.innerHTML = `
+                <div class="grid grid-cols-6 gap-3 items-end">
+                    <div class="col-span-6 sm:col-span-3">
+                        <label class="form-label text-xs uppercase text-gray-500">Descrição</label>
+                        <input type="text" id="name-${id}" class="form-input bg-white" placeholder="Material" required>
+                    </div>
+                    <div class="col-span-3 sm:col-span-1">
+                        <label class="form-label text-xs uppercase text-gray-500">Qtd.</label>
+                        <input type="number" id="qty-${id}" class="form-input bg-white text-center" min="1" value="1" oninput="calculateTotal()" required>
+                    </div>
+                    <div class="col-span-3 sm:col-span-1">
+                        <label class="form-label text-xs uppercase text-gray-500">Unid.</label>
+                        <select id="unit-${id}" class="form-input bg-white" required>
+                            <option>UN</option><option>KG</option><option>M</option><option>L</option><option>cx</option>
+                        </select>
+                    </div>
+                    <div class="hidden sm:flex col-span-1 justify-center items-center pb-2">
+                         <button onclick="removeMaterialRow(${id})" class="p-2 text-gray-400 hover:text-red-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-200">
+                    <div>
+                        <label class="form-label text-xs uppercase text-gray-500">Valor Unit. (R$)</label>
+                        <input type="number" id="value-${id}" class="form-input bg-white" step="0.01" min="0" placeholder="0.00" oninput="calculateTotal()">
+                    </div>
+                    <div>
+                        <label class="form-label text-xs uppercase text-gray-500 text-right">Subtotal</label>
+                        <div id="row-total-${id}" class="py-2.5 px-3 bg-gray-100 rounded-lg font-bold text-gray-700 text-right">R$ 0,00</div>
+                    </div>
+                </div>
+            `;
+            listDiv.appendChild(row);
+            calculateTotal();
+        }
+
+        window.removeMaterialRow = function(id) {
+            materialRows = materialRows.filter(r => r !== id);
+            document.getElementById(`row-${id}`).remove();
+            calculateTotal();
+        }
+
+        window.calculateTotal = function() {
+            let total = 0;
+            materialRows.forEach(id => {
+                const q = parseFloat(document.getElementById(`qty-${id}`).value) || 0;
+                const v = parseFloat(document.getElementById(`value-${id}`).value) || 0;
+                const sub = q * v;
+                document.getElementById(`row-total-${id}`).textContent = sub.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                total += sub;
+            });
+            document.getElementById('total-value').textContent = total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        }
+
+        window.submitForm = async function() {
+            const btn = document.getElementById('btn-submit');
+            const status = document.getElementById('status-message');
+            
+            // Pega o valor do campo de input (se for manual) ou o valor preenchido via JS (se for pré-cadastrada)
+            const destName = document.getElementById('destNameInput').value; 
+            const requesterSelect = document.getElementById('requesterSelect');
+            const requester = requesterSelect.value; // Pega o nome do solicitante do select
+            const ccEmails = document.getElementById('ccEmails').value; 
+            
+            if(!destName || destName.trim() === '') { alert("Por favor, selecione ou digite o nome da Empresa de Destino."); return; }
+            if(!requester) { alert("Preencha o Nome do Solicitante."); return; }
+            if(materialRows.length === 0) { alert("Adicione material."); return; }
+
+            btn.disabled = true;
+            btn.textContent = "Processando...";
+            status.className = "hidden";
+
+            // Monta lista de materiais COM PREÇO para o email
+            const materialsText = materialRows.map(id => {
+                const n = document.getElementById(`name-${id}`).value;
+                const q = parseFloat(document.getElementById(`qty-${id}`).value) || 0;
+                const u = document.getElementById(`unit-${id}`).value;
+                const v = parseFloat(document.getElementById(`value-${id}`).value) || 0;
+                const sub = (q * v).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                const vUnit = v.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                return `- ${n} | Qtd: ${q} ${u} | Unit: R$ ${vUnit} | Total: ${sub}`;
+            }).join('\n');
+
+            const templateParams = {
+                dest_name: destName,
+                dest_cnpj: document.getElementById('destCnpj').value || 'N/A',
+                dest_phone: document.getElementById('destPhone').value || 'N/A',
+                dest_address: document.getElementById('destAddress').value || 'N/A',
+                dest_cep: document.getElementById('destCep').value || 'N/A',
+                requester_name: requester,
+                reason: document.getElementById('reason').value,
+                exit_date: document.getElementById('exitDate').value,
+                total_value: document.getElementById('total-value').textContent, 
+                // Destinatário principal (To)
+                to_email: MANAGER_EMAIL,
+                // Emails em cópia (Cc): Combina o valor digitado com o padrão
+                cc_emails: ccEmails ? `${ccEmails}, ${DEFAULT_CC_EMAILS}` : DEFAULT_CC_EMAILS, 
+                message_html: materialsText
+            };
+
+            try {
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+                
+                // Salvar Histórico
+                if(db && userId) {
+                    await addDoc(collection(db, `artifacts/${appId}/users/${userId}/asms`), {
+                        ...templateParams, created_at: serverTimestamp()
+                    });
+                }
+                
+                status.innerHTML = `✅ Sucesso! Enviado para ${MANAGER_EMAIL} e cópia para: ${templateParams.cc_emails}`;
+                status.className = "p-4 mb-6 rounded-lg bg-green-100 text-green-800 text-center";
+                resetForm();
+                
+            } catch (error) {
+                console.error("ERRO EMAILJS DETALHADO:", error);
+                
+                let msgErro = (error.text || error.message || JSON.stringify(error));
+                
+                status.innerHTML = `❌ Erro Técnico: ${msgErro}<br><span class="text-xs">Verifique a conexão ou se o formato dos emails CC está correto.</span>`;
+                status.className = "p-4 mb-6 rounded-lg bg-red-100 text-red-800 text-center border border-red-200";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Enviar ASM (EmailJS)";
+                window.scrollTo(0, 0);
+            }
+        }
+
+        window.resetForm = function() {
+            materialRows = [];
+            document.getElementById('material-list').innerHTML = '';
+            addMaterialRow();
+            
+            // Reseta campos de destino
+            document.getElementById('destSelect').value = '';
+            document.getElementById('destNameInput').value = ''; 
+            fillDestinationDetails(''); // Libera campos
+            
+            // Reseta o solicitante
+            document.getElementById('requesterSelect').value = '';
+
+            document.getElementById('ccEmails').value = DEFAULT_CC_EMAILS; 
+        }
+
+        window.loadHistory = function() {
+            if(!db || !userId) return;
+            const listDiv = document.getElementById('history-list');
+            const q = query(collection(db, `artifacts/${appId}/users/${userId}/asms`), orderBy("created_at", "desc"));
+            onSnapshot(q, (snapshot) => {
+                document.getElementById('loading-history').classList.add('hidden');
+                listDiv.innerHTML = '';
+                if (snapshot.empty) { document.getElementById('no-history').classList.remove('hidden'); return; }
+                document.getElementById('no-history').classList.add('hidden');
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const date = data.created_at ? new Date(data.created_at.seconds * 1000).toLocaleDateString() : data.exit_date;
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-xl border border-gray-200 shadow-sm";
+                    card.innerHTML = `<div class="flex justify-between"><div><h4 class="font-bold text-blue-800">${data.dest_name}</h4><p class="text-sm text-gray-500">${data.reason}</p></div><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">${date}</span></div>`;
+                    listDiv.appendChild(card);
+                });
+            });
+        }
+
+        window.showTab = function(tab) {
+            const formDiv = document.getElementById('content-form');
+            const histDiv = document.getElementById('content-history');
+            const btnForm = document.getElementById('tab-form');
+            const btnHist = document.getElementById('tab-history');
+
+            if(tab === 'form') {
+                formDiv.classList.remove('hidden');
+                histDiv.classList.add('hidden');
+                
+                btnForm.classList.add('text-blue-600', 'border-blue-600', 'bg-white');
+                btnForm.classList.remove('text-gray-500', 'border-transparent', 'hover:bg-gray-50');
+                
+                btnHist.classList.remove('text-blue-600', 'border-blue-600', 'bg-white');
+                btnHist.classList.add('text-gray-500', 'border-transparent');
+            } else {
+                formDiv.classList.add('hidden');
+                histDiv.classList.remove('hidden');
+                
+                btnHist.classList.add('text-blue-600', 'border-blue-600', 'bg-white');
+                btnHist.classList.remove('text-gray-500', 'border-transparent');
+                
+                btnForm.classList.remove('text-blue-600', 'border-blue-600', 'bg-white');
+                btnForm.classList.add('text-gray-500', 'border-transparent', 'hover:bg-gray-50');
+                
+                loadHistory();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('exitDate').value = new Date().toLocaleDateString('pt-BR');
+            addMaterialRow();
+            document.getElementById('ccEmails').value = DEFAULT_CC_EMAILS;
+            fillDestinationDetails(''); 
+        });
+
+        window.addMaterialRow = window.addMaterialRow;
+        window.removeMaterialRow = window.removeMaterialRow;
+        window.calculateTotal = window.calculateTotal;
+        window.submitForm = window.submitForm;
+        window.showTab = window.showTab;
+        window.loadHistory = window.loadHistory;
+        window.fillDestinationDetails = window.fillDestinationDetails; // Torna global
+    </script>
+</body>
+</html>
